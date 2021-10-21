@@ -13,3 +13,4 @@ pubspec.yaml changes:
 There's a new dependency under the pubspec.yaml file called geolocator with the value ^7.7.0. I believe that's the version.
 
 Here is the geolocator package for reference: https://pub.dev/packages/geolocator
+
