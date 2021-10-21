@@ -51,7 +51,6 @@ class MapSampleState extends State<MyHomePage> {
   var newGoogleMapController;
 
   var geoLocator = Geolocator();
-  double bottomPaddingOfMap = 0;
 
   // This method is called when map is first opened.
   // It gets the current position of the user and displays it.
@@ -87,7 +86,6 @@ class MapSampleState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: GoogleMap(
-        padding: EdgeInsets.only(bottom: bottomPaddingOfMap),
         mapType: MapType.hybrid,
         initialCameraPosition: _kUNH,
         myLocationEnabled: true,
@@ -96,10 +94,6 @@ class MapSampleState extends State<MyHomePage> {
         onMapCreated: (GoogleMapController controller) {
           _controller.complete(controller);
           newGoogleMapController = controller;
-
-          setState(() {
-            bottomPaddingOfMap = 365.0;
-          });
 
           locatePosition(); // calls method that gets current user location.
         },
