@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 void main() {
@@ -39,7 +40,6 @@ class MyHomePage extends StatefulWidget {
   final String title;
 
   @override
-
   State<MyHomePage> createState() => MapSampleState();
 }
 
@@ -47,8 +47,29 @@ class MyHomePage extends StatefulWidget {
 class MapSampleState extends State<MyHomePage> {
   final Completer<GoogleMapController> _controller = Completer();
 
+  var currentPosition; // current position of user
+  var newGoogleMapController;
+
+  var geoLocator = Geolocator();
+
+  // This method is called when map is first opened.
+  // It gets the current position of the user and displays it.
+  void locatePosition() async {
+    Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high);
+    currentPosition = position;
+
+    LatLng latLatPosition = LatLng(position.latitude, position.longitude);
+
+    CameraPosition cameraPositon =
+        new CameraPosition(target: latLatPosition, zoom: 14);
+    newGoogleMapController
+        .animateCamera(CameraUpdate.newCameraPosition(cameraPositon));
+  }
+
   // This is where the map starts from, coordinates of UNH
   // TODO: Probably have this go to user's location automatically
+  // Elvis's comment: The "TODO" above is implemented in the above method.
   static const CameraPosition _kUNH = CameraPosition(
     target: LatLng(43.137180, -70.932732),
     zoom: 14.4746,
@@ -67,8 +88,14 @@ class MapSampleState extends State<MyHomePage> {
       body: GoogleMap(
         mapType: MapType.hybrid,
         initialCameraPosition: _kUNH,
+        myLocationEnabled: true,
+        zoomGesturesEnabled: true,
+        zoomControlsEnabled: true,
         onMapCreated: (GoogleMapController controller) {
           _controller.complete(controller);
+          newGoogleMapController = controller;
+
+          locatePosition(); // calls method that gets current user location.
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
