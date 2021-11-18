@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:spaitr_map/rest_api.dart';
+
+import 'Game.dart';
 
 void main() {
   runApp(const MyApp());
@@ -60,6 +63,18 @@ class MapSampleState extends State<MyHomePage> {
     currentPosition = position;
 
     LatLng latLatPosition = LatLng(position.latitude, position.longitude);
+
+    ApiService apiService = ApiService();
+    var games_list = apiService.fetchGames(position.latitude, position.longitude);
+
+    print("AHAHAHHAHAHA");
+
+    games_list.then((value) => {
+        value.forEach((element) {
+          print(element.toString());
+        })
+      }
+    );
 
     CameraPosition cameraPositon =
         new CameraPosition(target: latLatPosition, zoom: 14);
