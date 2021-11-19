@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:spaitr_map/rest/rest_api.dart';
+
+import 'core/game.dart';
 
 void main() {
   runApp(const MyApp());
@@ -52,6 +55,8 @@ class MapSampleState extends State<MyHomePage> {
 
   var geoLocator = Geolocator();
 
+  var restAPI = RestAPI();
+
   // This method is called when map is first opened.
   // It gets the current position of the user and displays it.
   void locatePosition() async {
@@ -60,6 +65,19 @@ class MapSampleState extends State<MyHomePage> {
     currentPosition = position;
 
     LatLng latLatPosition = LatLng(position.latitude, position.longitude);
+
+    // Example of using restAPI to call fetchGames from REST API controller
+    // stuff inside then(...) runs after game information has been received from server
+    // https://stackoverflow.com/a/54515559 for more information
+    // Right now, it only prints the information about each game in the example
+    restAPI.fetchGames(position.latitude, position.longitude).then((List<Game> gamesList) => {
+      gamesList.forEach((Game game) {
+        // game.coorX // gets x coordinate of game
+        // game.coorY // gets y coordinate of game
+        
+        print(game.toString());
+      })
+    });
 
     CameraPosition cameraPositon =
         new CameraPosition(target: latLatPosition, zoom: 14);
