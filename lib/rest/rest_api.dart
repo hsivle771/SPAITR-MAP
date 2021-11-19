@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:spaitr_map/game.dart';
-import 'package:spaitr_map/dummy_data.dart' as dummy_data;
+import 'package:spaitr_map/core/game.dart';
+import 'package:spaitr_map/rest/dummy_data.dart' as dummy_data;
 
 class URLS {
   static const String baseURL = 'http://10.0.2.2:8000';
@@ -12,7 +12,7 @@ class URLS {
 /*
 REST API calls that the client makes to the server
  */
-class ApiService {
+class RestAPI {
   // https://www.tutorialspoint.com/flutter/flutter_accessing_rest_api.htm
   List<Game> parseGames(String responseBody) {
     final parsed = json.decode(responseBody).cast<Map<String, dynamic>>();
@@ -24,7 +24,6 @@ class ApiService {
     try {
       final response = await http.get(
           Uri.parse('${URLS.baseURL}/nearby_games/$coorX/$coorY'),
-          // Uri.parse('http://api.open-notify.org/astros'),
           headers: {
             "Accept": "application/json",
             "Access-Control-Allow-Origin": "*",
@@ -36,7 +35,7 @@ class ApiService {
       if (response.statusCode == 200) {
         return parseGames(response.body);
       } else {
-        throw Exception('Unable to fetch products from the REST API');
+        throw Exception('Unable to fetching games from ${URLS.baseURL}');
       }
     } on Exception catch(_) {
       // TODO: Remove this once server sends back real data
@@ -45,4 +44,11 @@ class ApiService {
       throw Exception('Unable to fetching games from ${URLS.baseURL}');
     }
   }
+
+  // https://www.tutorialspoint.com/flutter/flutter_accessing_rest_api.htm
+  List<Game> parseGameInfo(String responseBody) {
+    final parsed = json.decode(responseBody).cast<Map<String, dynamic>>();
+    return parsed.map<Game>((json) => Game.fromJson(json)).toList();
+  }
+
 }
