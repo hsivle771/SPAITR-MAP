@@ -3,9 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:spaitr_map/rest/rest_api.dart';
+import 'package:provider/provider.dart';
+import 'package:spaitr_map/create_game.dart';
 
-import 'core/game.dart';
+import 'blocs/app_bloc.dart';
 
 void main() {
   runApp(const MyApp());
@@ -23,13 +24,20 @@ class MyApp extends StatelessWidget {
         // This is the theme of your application.
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'SPAITR Map'),
+      home: MyHomePage(
+        title: 'SPAITR Map',
+        locationDataModel:
+            LocationDataModel('UNH', const LatLng(42.364471, -71.053261)),
+      ),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
+  final LocationDataModel locationDataModel;
+  const MyHomePage(
+      {Key? key, required this.title, required this.locationDataModel})
+      : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -46,6 +54,15 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => MapSampleState();
 }
 
+// New Location Point Constructor
+// Used when psuhing location data from create page to main page
+class LocationDataModel {
+  LocationDataModel(String name, coordinates) {
+    MapSampleState.newName = name;
+    MapSampleState.newLocation = coordinates;
+  }
+}
+
 // Added from https://pub.dev/packages/google_maps_flutter
 class MapSampleState extends State<MyHomePage> {
   final Completer<GoogleMapController> _controller = Completer();
@@ -55,7 +72,8 @@ class MapSampleState extends State<MyHomePage> {
 
   var geoLocator = Geolocator();
 
-  var restAPI = RestAPI();
+  static var newName;
+  static var newLocation; // New location to make as point
 
   // This method is called when map is first opened.
   // It gets the current position of the user and displays it.
@@ -66,66 +84,62 @@ class MapSampleState extends State<MyHomePage> {
 
     LatLng latLatPosition = LatLng(position.latitude, position.longitude);
 
-    // Example of using restAPI to call fetchGames from REST API controller
-    // stuff inside then(...) runs after game information has been received from server
-    // https://stackoverflow.com/a/54515559 for more information
-    // Right now, it only prints the information about each game in the example
-    restAPI.fetchGames(position.latitude, position.longitude).then((List<Game> gamesList) => {
-      gamesList.forEach((Game game) {
-        // game.coorX // gets x coordinate of game
-        // game.coorY // gets y coordinate of game
-        
-        print(game.toString());
-      })
-    });
-
     CameraPosition cameraPositon =
-        new CameraPosition(target: latLatPosition, zoom: 14);
+        CameraPosition(target: latLatPosition, zoom: 14);
     newGoogleMapController
         .animateCamera(CameraUpdate.newCameraPosition(cameraPositon));
   }
 
   // This is where the map starts from, coordinates of UNH
-  // TODO: Probably have this go to user's location automatically
   // Elvis's comment: The "TODO" above is implemented in the above method.
   static const CameraPosition _kUNH = CameraPosition(
     target: LatLng(43.137180, -70.932732),
     zoom: 14.4746,
   );
 
-  // Clicking the button goes to these coordinates
-  static const CameraPosition _kBoston = CameraPosition(
-      bearing: 192.8334901395799,
-      target: LatLng(42.364471, -71.053261),
-      tilt: 59.440717697143555,
-      zoom: 19.151926040649414);
+  // List of created game points on the map
+  List<Marker> mapPoints = [];
+
+  @override
+  void initState() {
+    mapPoints.add(Marker(
+        markerId: MarkerId(newName),
+        draggable: false,
+        onTap: () {
+          print('Marker Tapped');
+        },
+        position: newLocation));
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: GoogleMap(
-        mapType: MapType.hybrid,
-        initialCameraPosition: _kUNH,
-        myLocationEnabled: true,
-        zoomGesturesEnabled: true,
-        zoomControlsEnabled: true,
-        onMapCreated: (GoogleMapController controller) {
-          _controller.complete(controller);
-          newGoogleMapController = controller;
+    return ChangeNotifierProvider(
+      create: (context) => ApplicationBloc(),
+      child: Scaffold(
+        body: GoogleMap(
+          mapType: MapType.hybrid,
+          initialCameraPosition: _kUNH,
+          myLocationEnabled: true,
+          zoomGesturesEnabled: true,
+          zoomControlsEnabled: true,
+          onMapCreated: (GoogleMapController controller) {
+            _controller.complete(controller);
+            newGoogleMapController = controller;
 
-          locatePosition(); // calls method that gets current user location.
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _goToBoston,
-        label: const Text('To Boston!'),
-        icon: const Icon(Icons.directions_boat),
+            locatePosition(); // calls method that gets current user location.
+          },
+          // Set newly created point on the map (Work-in-Progress)
+          markers: Set.from(mapPoints),
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (context) => CreateGameScreen()));
+          },
+          label: const Text('Create A New Game'),
+          icon: const Icon(Icons.add_location),
+        ),
       ),
     );
-  }
-
-  Future<void> _goToBoston() async {
-    final GoogleMapController controller = await _controller.future;
-    controller.animateCamera(CameraUpdate.newCameraPosition(_kBoston));
   }
 }
