@@ -21,6 +21,9 @@ class RestAPI {
 
   // Retrieves a list of nearby games based on the given coordinates
   Future<List<Game>> fetchGames(double coorX, double coorY) async {
+    // TODO: Remove this in future, here to speed up debugging until server works
+    return parseGames(dummy_data.DUMMY_FETCHGAMES_JSON);
+
     try {
       final response = await http.get(
           Uri.parse('${URLS.baseURL}/nearby_games/$coorX/$coorY'),
