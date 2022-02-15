@@ -10,6 +10,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:numberpicker/numberpicker.dart';
 import 'package:spaitr_map/blocs/app_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:spaitr_map/core/bool_response.dart';
+import 'package:spaitr_map/rest/rest_api.dart';
 
 import 'models/place_search.dart';
 
@@ -36,6 +38,13 @@ class CreateGameState extends State<CreateGame> {
 
   bool _disableMapMove = true;
   int _playerAmount = 1;
+  String gameTime = "";
+  String gameDate = "";
+  List<PlaceSearch> autocompleteResults = [];
+  double currLatitude = 0.0;
+  double currLongitude = 0.0;
+
+  var restAPI = RestAPI();
 
   @override
   void dispose() {
@@ -80,13 +89,6 @@ class CreateGameState extends State<CreateGame> {
 
   @override
   Widget build(BuildContext context) {
-    List<PlaceSearch> autocompleteResults = [];
-
-    String gameTime = "";
-    String gameDate = "";
-
-    LatLng currentGamePosition = LatLng(widget.currentLocation.latitude, widget.currentLocation.longitude);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create A Pickup Game'),
@@ -132,7 +134,7 @@ class CreateGameState extends State<CreateGame> {
                     zoomControlsEnabled: _disableMapMove,
 
                     initialCameraPosition: CameraPosition(
-                        target: currentGamePosition,
+                        target: LatLng(currLatitude, currLongitude),
                         zoom: 14),
                     onMapCreated: (GoogleMapController controller) {
                       _controller.complete(controller);
@@ -169,7 +171,9 @@ class CreateGameState extends State<CreateGame> {
                               LatLng coordinate) {
                             setState(() {
                               autocompleteResults = [];
-                              currentGamePosition = coordinate;
+                              currLatitude = coordinate.latitude;
+                              currLongitude = coordinate.longitude;
+
                               googleMapController.animateCamera(
                                   CameraUpdate.newCameraPosition(
                                       CameraPosition(
@@ -271,7 +275,22 @@ class CreateGameState extends State<CreateGame> {
         onPressed: () {
           // Return back to the home screen and bring the game position for it to display on map
           if (validateNewGameSettings(context, gameTime, gameDate)) {
-            Navigator.pop(context, currentGamePosition);
+            sendToastMessage(context, "Creating game...");
+
+            restAPI.createGame(
+                gameTime,
+                gameDate,
+                _playerAmount,
+                currLatitude,
+                currLongitude).then((BoolResponse serverResponse) {
+                  if (serverResponse.boolResponse) {
+                    Navigator.pop(context, LatLng(currLatitude, currLongitude));
+                  } else {
+                    sendToastMessage(context, serverResponse.errorMessage);
+                  }
+                }
+            );
+
           }
         },
         child: const Icon(Icons.add),

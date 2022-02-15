@@ -20,3 +20,9 @@ const DUMMY_FETCHGAMES_JSON = '''
     ]
     ''';
 
+const DUMMY_CREATEGAME_JSON = '''
+    {
+        "success": "true", 
+        "error_msg": ""
+    }
+    ''';
