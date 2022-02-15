@@ -1,13 +1,9 @@
 import 'dart:async';
 import 'dart:core';
-import 'dart:html';
 
-import 'package:date_format/date_format.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_number_picker/flutter_number_picker.dart';
-import 'package:geolocator_platform_interface/src/models/position.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:numberpicker/numberpicker.dart';
 import 'package:spaitr_map/blocs/app_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:spaitr_map/core/bool_response.dart';
@@ -134,7 +130,7 @@ class CreateGameState extends State<CreateGame> {
                     zoomControlsEnabled: _disableMapMove,
 
                     initialCameraPosition: CameraPosition(
-                        target: LatLng(currLatitude, currLongitude),
+                        target: LatLng(widget.currentLocation.latitude, widget.currentLocation.longitude),
                         zoom: 14),
                     onMapCreated: (GoogleMapController controller) {
                       _controller.complete(controller);
