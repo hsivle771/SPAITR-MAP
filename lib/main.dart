@@ -53,41 +53,27 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => MapSampleState();
 }
 
-// // New Location Point Constructor
-// // Used when psuhing location data from create page to main page
-// class LocationDataModel {
-//   LocationDataModel(String name, coordinates) {
-//     MapSampleState.newName = name;
-//     MapSampleState.newLocation = coordinates;
-//   }
-// }
-
 // Added from https://pub.dev/packages/google_maps_flutter
 class MapSampleState extends State<MyHomePage> {
   final Completer<GoogleMapController> _controller = Completer();
 
-  var currentPosition; // current position of user
-  var newGoogleMapController;
+  LatLng currentPosition = LatLng(0, 0); // current position of user
+  late GoogleMapController newGoogleMapController;
 
   var geoLocator = Geolocator();
   var restAPI = RestAPI();
-
-  static var newName;
-  static var newLocation; // New location to make as point
 
   // This method is called when map is first opened.
   // It gets the current position of the user and displays it.
   void locatePosition() async {
     Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high);
-    currentPosition = position;
-
-    LatLng latLatPosition = LatLng(position.latitude, position.longitude);
+    currentPosition = LatLng(position.latitude, position.longitude);
 
     fetchNearbyGames(position.latitude, position.longitude);
 
     CameraPosition cameraPositon =
-        CameraPosition(target: latLatPosition, zoom: 14);
+        CameraPosition(target: currentPosition, zoom: 16);
     newGoogleMapController
         .animateCamera(CameraUpdate.newCameraPosition(cameraPositon));
   }
@@ -178,29 +164,31 @@ class MapSampleState extends State<MyHomePage> {
             )
         ),
         floatingActionButton: FloatingActionButton.extended(
-                onPressed: () async {
-                  // Open up create game page and wait until it receives a result back of the new game position
-                  var newGamePosition = await Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => const CreateGame()));
+              onPressed: () async {
 
-                  var newMarkers = mapPoints;
-                  if (newGamePosition != null) {
-                    newGoogleMapController
-                        .animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: newGamePosition, zoom: 14)));
-                    newMarkers.add(Marker(markerId: MarkerId("${newMarkers.length + 1}"), position: newGamePosition));
-                  }
 
-                  updateMarkers(newMarkers);
+                // Open up create game page and wait until it receives a result back of the new game position
+                var newGamePosition = await Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => CreateGame(currentPosition)));
 
-                  setState(() {
-                    // Seems to maybe make map appear blank less often on android phone
-                    mapOpacity = 1.0;
-                  });
-                },
-                label: const Text('Create A New Game'),
-                icon: const Icon(Icons.add_location),
-              ),
+                var newMarkers = mapPoints;
+                if (newGamePosition != null) {
+                  newGoogleMapController
+                      .animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: newGamePosition, zoom: 16)));
+                  newMarkers.add(Marker(markerId: MarkerId("${newMarkers.length + 1}"), position: newGamePosition));
+                }
+
+                updateMarkers(newMarkers);
+
+                setState(() {
+                  // Seems to maybe make map appear blank less often on android phone
+                  mapOpacity = 1.0;
+                });
+              },
+              label: const Text('Create Game'),
+              icon: const Icon(Icons.add_location),
             ),
+          ),
       );
   }
 }
