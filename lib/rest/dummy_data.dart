@@ -26,3 +26,10 @@ const DUMMY_CREATEGAME_JSON = '''
         "error_msg": ""
     }
     ''';
+
+const DUMMY_JOINGAME_JSON = '''
+    {
+        "success": "true", 
+        "error_msg": ""
+    }
+    ''';
