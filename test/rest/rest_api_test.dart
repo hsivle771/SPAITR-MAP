@@ -13,7 +13,7 @@ class PartialMockRestAPI extends RestAPI {
   PartialMockRestAPI(this.jsonResponseString);
 
   @override
-  Future<Response> makeJsonRequest(String url) async {
+  Future<Response> makeJsonRequest(String url, RequestType rt) async {
     return Future(() => Response(jsonResponseString, 200));
   }
 }
