@@ -34,9 +34,7 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatefulWidget {
   // final LocationDataModel locationDataModel;
-  const MyHomePage(
-      {Key? key, required this.title})
-      : super(key: key);
+  const MyHomePage({Key? key, required this.title}) : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -53,27 +51,44 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => MapSampleState();
 }
 
+// // New Location Point Constructor
+// // Used when psuhing location data from create page to main page
+// class LocationDataModel {
+//   LocationDataModel(String name, coordinates) {
+//     MapSampleState.newName = name;
+//     MapSampleState.newLocation = coordinates;
+//   }
+// }
+
 // Added from https://pub.dev/packages/google_maps_flutter
 class MapSampleState extends State<MyHomePage> {
+  // Temp
+  final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
+
   final Completer<GoogleMapController> _controller = Completer();
 
-  LatLng currentPosition = LatLng(0, 0); // current position of user
-  late GoogleMapController newGoogleMapController;
+  var currentPosition; // current position of user
+  var newGoogleMapController;
 
   var geoLocator = Geolocator();
   var restAPI = RestAPI();
+
+  static var newName;
+  static var newLocation; // New location to make as point
 
   // This method is called when map is first opened.
   // It gets the current position of the user and displays it.
   void locatePosition() async {
     Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high);
-    currentPosition = LatLng(position.latitude, position.longitude);
+    currentPosition = position;
+
+    LatLng latLatPosition = LatLng(position.latitude, position.longitude);
 
     fetchNearbyGames(position.latitude, position.longitude);
 
     CameraPosition cameraPositon =
-        CameraPosition(target: currentPosition, zoom: 16);
+        CameraPosition(target: latLatPosition, zoom: 14);
     newGoogleMapController
         .animateCamera(CameraUpdate.newCameraPosition(cameraPositon));
   }
@@ -93,15 +108,13 @@ class MapSampleState extends State<MyHomePage> {
 
     restAPI.fetchGames(xCoor, yCoor).then((List<Game> games) {
       for (var game in games) {
-        newMarkers.add(
-            Marker(
-              markerId: MarkerId(game.id),
-              position: LatLng(game.coorX, game.coorY),
-              onTap: () {
-                print("Game ${game.id}");
-              },
-            )
-        );
+        newMarkers.add(Marker(
+          markerId: MarkerId(game.id),
+          position: LatLng(game.coorX, game.coorY),
+          onTap: () {
+            print("Game ${game.id}");
+          },
+        ));
       }
 
       // Updates the markers on the map
@@ -131,6 +144,12 @@ class MapSampleState extends State<MyHomePage> {
     return ChangeNotifierProvider(
       create: (context) => ApplicationBloc(),
       child: Scaffold(
+        key: scaffoldKey,
+        appBar: AppBar(
+          leading: Icon(Icons.map),
+          backgroundColor: Colors.blue,
+          title: Text("Google Maps With Markers"),
+        ),
         /*
           AnimatedOpacity here because there seems to be an issue sometimes with Google Maps showing
            up blank when returning to the screen from another page on my android phone. AnimatedOpacity
@@ -161,34 +180,138 @@ class MapSampleState extends State<MyHomePage> {
               },
               // Set newly created point on the map (Work-in-Progress)
               markers: Set.from(mapPoints),
-            )
-        ),
+            )),
         floatingActionButton: FloatingActionButton.extended(
-              onPressed: () async {
+          onPressed: () async {
+            // Open up create game page and wait until it receives a result back of the new game position
+            var newGamePosition = await Navigator.push(context,
+                MaterialPageRoute(builder: (context) => const CreateGame()));
 
+            var newMarkers = mapPoints;
+            if (newGamePosition != null) {
+              newGoogleMapController.animateCamera(
+                  CameraUpdate.newCameraPosition(
+                      CameraPosition(target: newGamePosition, zoom: 14)));
+              newMarkers.add(Marker(
+                  markerId: MarkerId("${newMarkers.length + 1}"),
+                  // ================ NEW ADDITIONS BELOW. TRY RUNNING IT =====
+                  infoWindow: InfoWindow(
+                    title: "Live Lacrosse Game",
+                    onTap: () {
+                      showModalBottomSheet<void>(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return Container(
+                            height: 200,
+                            color: Colors.amber,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[
+                                  const Text('Modal BottomSheet'),
+                                  ElevatedButton(
+                                    child: const Text('Close BottomSheet'),
+                                    onPressed: () => Navigator.pop(context),
+                                  )
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                  position: newGamePosition));
+            }
 
-                // Open up create game page and wait until it receives a result back of the new game position
-                var newGamePosition = await Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => CreateGame(currentPosition)));
+            updateMarkers(newMarkers);
 
-                var newMarkers = mapPoints;
-                if (newGamePosition != null) {
-                  newGoogleMapController
-                      .animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: newGamePosition, zoom: 16)));
-                  newMarkers.add(Marker(markerId: MarkerId("${newMarkers.length + 1}"), position: newGamePosition));
-                }
-
-                updateMarkers(newMarkers);
-
-                setState(() {
-                  // Seems to maybe make map appear blank less often on android phone
-                  mapOpacity = 1.0;
-                });
-              },
-              label: const Text('Create Game'),
-              icon: const Icon(Icons.add_location),
-            ),
-          ),
-      );
+            setState(() {
+              // Seems to maybe make map appear blank less often on android phone
+              mapOpacity = 1.0;
+            });
+          },
+          label: const Text('Create A New Game'),
+          icon: const Icon(Icons.add_location),
+        ),
+      ),
+    );
   }
+
+  // ================= Bottom sheet Addition (check link below on how to use code below) =================
+  // ================= Link: https://rrtutors.com/tutorials/Show-Multiple-Markers-on-Google-Maps-Flutter =
+  /*
+    Widget getBottomSheet(String s)
+  {
+    return Stack(
+      children: <Widget>[
+        Container(
+
+          margin: EdgeInsets.only(top: 32),
+          color: Colors.white,
+          child: Column(
+            children: <Widget>[
+              Container(
+                color: Colors.blueAccent,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text("Hytech City Public School \n CBSC",style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14
+                      ),),
+                      SizedBox(height: 5,),
+                      Row(children: <Widget>[
+
+                        Text("4.5",style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12
+                        )),
+                        Icon(Icons.star,color: Colors.yellow,),
+                        SizedBox(width: 20,),
+                        Text("970 Folowers",style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14
+                        ))
+                      ],),
+                      SizedBox(height: 5,),
+                      Text("Memorial Park",style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14
+                      )),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: 20,),
+              Row(
+                children: <Widget>[SizedBox(width: 20,),Icon(Icons.map,color: Colors.blue,),SizedBox(width: 20,),Text("$s")],
+              ),
+              SizedBox(height: 20,),
+              Row(
+                children: <Widget>[SizedBox(width: 20,),Icon(Icons.call,color: Colors.blue,),SizedBox(width: 20,),Text("040-123456")],
+              )
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Align(
+            alignment: Alignment.topRight,
+
+            child: FloatingActionButton(
+                child: Icon(Icons.navigation),
+                onPressed: (){
+
+                }),
+          ),
+        )
+      ],
+
+    );
+  }
+  */
 }
