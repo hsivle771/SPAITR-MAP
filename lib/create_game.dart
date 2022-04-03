@@ -23,6 +23,20 @@ class CreateGame extends StatefulWidget {
   State<CreateGame> createState() => CreateGameState();
 }
 
+class Validators {
+  static bool validateNewGameSettings(String gameTime, String gameDate) {
+    if (gameDate.isEmpty) {
+      return false;
+    }
+
+    if (gameTime.isEmpty) {
+      return false;
+    }
+
+    return true;
+  }
+}
+
 class CreateGameState extends State<CreateGame> {
   ApplicationBloc applicationBloc = ApplicationBloc();
 
@@ -67,20 +81,6 @@ class CreateGameState extends State<CreateGame> {
             borderRadius: BorderRadius.all(Radius.circular(20)))
       ),
     );
-  }
-
-  bool validateNewGameSettings(BuildContext context, String gameTime, String gameDate) {
-    if (gameDate.isEmpty) {
-      sendToastMessage(context, "Make sure you enter a date!");
-      return false;
-    }
-
-    if (gameTime.isEmpty) {
-      sendToastMessage(context, "Make sure you enter a time!");
-      return false;
-    }
-
-    return true;
   }
 
   @override
@@ -270,7 +270,7 @@ class CreateGameState extends State<CreateGame> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // Return back to the home screen and bring the game position for it to display on map
-          if (validateNewGameSettings(context, gameTime, gameDate)) {
+          if (Validators.validateNewGameSettings(gameTime, gameDate)) {
             sendToastMessage(context, "Creating game...");
 
             restAPI.createGame(
@@ -287,6 +287,8 @@ class CreateGameState extends State<CreateGame> {
                 }
             );
 
+          } else {
+            sendToastMessage(context, "There was an error validating game...");
           }
         },
         child: const Icon(Icons.add),
