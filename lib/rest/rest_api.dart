@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:spaitr_map/core/bool_response.dart';
@@ -8,28 +9,77 @@ import 'package:spaitr_map/core/game.dart';
 import 'package:spaitr_map/rest/dummy_data.dart' as dummy_data;
 
 class URLS {
-  static const String baseURL = 'http://10.0.2.2:8000';
+  static const String baseURL = 'http://localhost:5000';
 }
+
+enum RequestType {PUT, GET, POST}
 
 /*
 REST API calls that the client makes to the server
  */
 class RestAPI {
-  Future<Response> makeJsonRequest(String url) async {
-    try {
-      var response = await http.get(
-          Uri.parse(url),
-          headers: {
-            "Accept": "application/json",
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "DELETE, POST, GET, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With",
-          }
-      );
 
-      return response;
-    } on Exception catch(_) {
-      throw Exception('Error sending request to: ${URLS.baseURL}');
+
+  Future<Response> makeJsonRequest(String url, RequestType rt) async {
+    var reqHeaders = {
+      "Accept": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "DELETE, POST, GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With",
+      };
+
+    switch (rt) {
+      case RequestType.PUT:
+        {
+          try {
+            var response = await http.put(
+                Uri.parse(url),
+                headers: reqHeaders
+            );
+
+            return response;
+          } on Exception catch(_) {
+            throw Exception('Error sending request to: ${URLS.baseURL}');
+          }
+        }
+      case RequestType.GET:
+        {
+          try {
+            var response = await http.get(
+                Uri.parse(url),
+                headers: reqHeaders
+            );
+
+            return response;
+          } on Exception catch(_) {
+            throw Exception('Error sending request to: ${URLS.baseURL}');
+          }
+        }
+      case RequestType.POST:
+        {
+          try {
+            var response = await http.post(
+                Uri.parse(url),
+                headers: reqHeaders
+            );
+
+            return response;
+          } on Exception catch(_) {
+            throw Exception('Error sending request to: ${URLS.baseURL}');
+          }
+        }
+      default: {
+        try {
+          var response = await http.get(
+              Uri.parse(url),
+              headers: reqHeaders
+          );
+
+          return response;
+        } on Exception catch(_) {
+          throw Exception('Error sending request to: ${URLS.baseURL}');
+        }
+      }
     }
   }
 
@@ -42,11 +92,11 @@ class RestAPI {
     }
 
     // TODO: Remove this in future, here to speed up debugging until server works
-    return parseGames(dummy_data.DUMMY_FETCHGAMES_JSON);
+    // return parseGames(dummy_data.DUMMY_FETCHGAMES_JSON);
 
     String apiCallURL = '${URLS.baseURL}/nearby_games/$coorX/$coorY';
 
-    Response response = await makeJsonRequest(apiCallURL);
+    Response response = await makeJsonRequest(apiCallURL, RequestType.GET);
 
     if (response.statusCode == 200) {
       return parseGames(response.body);
@@ -62,11 +112,11 @@ class RestAPI {
     }
 
     // TODO: Remove this in future, here to speed up debugging until server works
-    return parseCreateGameResponse(dummy_data.DUMMY_CREATEGAME_JSON);
+    // return parseCreateGameResponse(dummy_data.DUMMY_CREATEGAME_JSON);
 
     String apiCallURL = '${URLS.baseURL}/create_game/$coorX/$coorY/$gameDate/$gameTime/$maxPlayerAmount';
 
-    Response response = await makeJsonRequest(apiCallURL);
+    Response response = await makeJsonRequest(apiCallURL, RequestType.PUT);
 
     if (response.statusCode == 200) {
       return parseCreateGameResponse(response.body);
@@ -82,11 +132,11 @@ class RestAPI {
     }
 
     // TODO: Remove this in future, here to speed up debugging until server works
-    return parseJoinGameResponse(dummy_data.DUMMY_JOINGAME_JSON);
+    // return parseJoinGameResponse(dummy_data.DUMMY_JOINGAME_JSON);
 
     String apiCallURL = '${URLS.baseURL}/join_game/$gameId/$playerId';
 
-    Response response = await makeJsonRequest(apiCallURL);
+    Response response = await makeJsonRequest(apiCallURL, RequestType.POST);
 
     if (response.statusCode == 200) {
       return parseJoinGameResponse(response.body);
