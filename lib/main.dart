@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -7,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:spaitr_map/create_game.dart';
 import 'package:spaitr_map/rest/rest_api.dart';
 import 'package:google_maps_flutter_platform_interface/src/types/marker_updates.dart';
+import 'package:spaitr_map/settings.dart';
 
 import 'blocs/app_bloc.dart';
 import 'core/game.dart';
@@ -38,15 +40,6 @@ class MyHomePage extends StatefulWidget {
       {Key? key, required this.title})
       : super(key: key);
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
   final String title;
 
   @override
@@ -63,6 +56,17 @@ class MapSampleState extends State<MyHomePage> {
   var geoLocator = Geolocator();
   var restAPI = RestAPI();
 
+  // List of created game points on the map
+  List<Marker> mapPoints = [];
+
+  String username = "";
+
+  // Map defaults to UNH address until user location is determined
+  static const CameraPosition _kUNH = CameraPosition(
+    target: LatLng(43.137180, -70.932732),
+    zoom: 14.4746,
+  );
+
   // This method is called when map is first opened.
   // It gets the current position of the user and displays it.
   void locatePosition() async {
@@ -77,16 +81,6 @@ class MapSampleState extends State<MyHomePage> {
     newGoogleMapController
         .animateCamera(CameraUpdate.newCameraPosition(cameraPositon));
   }
-
-  // This is where the map starts from, coordinates of UNH
-  // Elvis's comment: The "TODO" above is implemented in the above method.
-  static const CameraPosition _kUNH = CameraPosition(
-    target: LatLng(43.137180, -70.932732),
-    zoom: 14.4746,
-  );
-
-  // List of created game points on the map
-  List<Marker> mapPoints = [];
 
   void fetchNearbyGames(double xCoor, double yCoor) {
     List<Marker> newMarkers = [];
@@ -122,32 +116,35 @@ class MapSampleState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+
+    // Username is initially set to Player<random number 1-999>
+    // In the settings menu, you can choose to edit the username
+    var random = Random();
+    username = "Player" + random.nextInt(999).toString();
   }
 
   @override
   Widget build(BuildContext context) {
-    double mapOpacity = 1.0;
-
     return ChangeNotifierProvider(
       create: (context) => ApplicationBloc(),
+
       child: Scaffold(
-        /*
-          AnimatedOpacity here because there seems to be an issue sometimes with Google Maps showing
-           up blank when returning to the screen from another page on my android phone. AnimatedOpacity
-           seems to make it happen less, found it from this solution here:
-           https://github.com/flutter/flutter/issues/39797#issuecomment-865704834
-
-           Looks to be like a bug that other people are experiencing too,
-           issue is still open on Flutter's end.
-
-           Another example:
-           https://github.com/flutter/flutter/issues/40284
-         */
-        body: AnimatedOpacity(
-            curve: Curves.fastOutSlowIn,
-            opacity: mapOpacity,
-            duration: const Duration(milliseconds: 600),
-            child: GoogleMap(
+        appBar: AppBar(
+          leading: const Icon(Icons.map),
+          backgroundColor: Colors.blue,
+          title: const Text("SPAITR Map"),
+          actions: [
+            IconButton(
+              onPressed: () async {
+                var newUsername = await Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => Settings(username)));
+                username = newUsername;
+              },
+              icon: const Icon(Icons.settings),
+            ),
+          ],
+        ),
+        body: GoogleMap(
               mapType: MapType.normal,
               initialCameraPosition: _kUNH,
               myLocationEnabled: true,
@@ -161,12 +158,9 @@ class MapSampleState extends State<MyHomePage> {
               },
               // Set newly created point on the map (Work-in-Progress)
               markers: Set.from(mapPoints),
-            )
-        ),
-        floatingActionButton: FloatingActionButton.extended(
+            ),
+            floatingActionButton: FloatingActionButton.extended(
               onPressed: () async {
-
-
                 // Open up create game page and wait until it receives a result back of the new game position
                 var newGamePosition = await Navigator.push(context,
                     MaterialPageRoute(builder: (context) => CreateGame(currentPosition)));
@@ -179,16 +173,11 @@ class MapSampleState extends State<MyHomePage> {
                 }
 
                 updateMarkers(newMarkers);
-
-                setState(() {
-                  // Seems to maybe make map appear blank less often on android phone
-                  mapOpacity = 1.0;
-                });
               },
               label: const Text('Create Game'),
               icon: const Icon(Icons.add_location),
             ),
-          ),
-      );
+      ),
+    );
   }
 }
