@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:core';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_number_picker/flutter_number_picker.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:spaitr_map/blocs/app_bloc.dart';
 import 'package:intl/intl.dart';
