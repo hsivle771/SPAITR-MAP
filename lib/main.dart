@@ -4,7 +4,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:spaitr_map/core/bool_response.dart';
 import 'package:spaitr_map/create_game.dart';
 import 'package:spaitr_map/rest/rest_api.dart';
 import 'package:google_maps_flutter_platform_interface/src/types/marker_updates.dart';
@@ -74,7 +76,7 @@ class MapSampleState extends State<MyHomePage> {
         desiredAccuracy: LocationAccuracy.high);
     currentPosition = LatLng(position.latitude, position.longitude);
 
-    // Once position is determined, fetch the nearby games every 1 second
+    // Once position is determined, fetch the nearby games every 10 second
     Timer.periodic(const Duration(seconds: 1), (timer) {
       fetchNearbyGames(position.latitude, position.longitude);
     });
@@ -83,6 +85,23 @@ class MapSampleState extends State<MyHomePage> {
         CameraPosition(target: currentPosition, zoom: 16);
     newGoogleMapController
         .animateCamera(CameraUpdate.newCameraPosition(cameraPositon));
+  }
+
+  void sendToastMessage(BuildContext context, String msgText) {
+    final scaffold = ScaffoldMessenger.of(context);
+    scaffold.showSnackBar(
+      SnackBar(
+          content: Text(
+            msgText,
+            textAlign: TextAlign.center,
+          ),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(milliseconds: 1250),
+          backgroundColor: Colors.black12.withOpacity(0.8),
+          shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(20)))
+      ),
+    );
   }
 
   void fetchNearbyGames(double xCoor, double yCoor) {
@@ -95,10 +114,108 @@ class MapSampleState extends State<MyHomePage> {
             Marker(
               markerId: MarkerId(game.id),
               position: LatLng(game.coorX, game.coorY),
-              onTap: () {
-                print("Game ${game.id}");
-              },
-            )
+                onTap: () {
+                  showModalBottomSheet<void>(
+                    context: context,
+                    builder: (BuildContext context) {
+                      String playersString = "\n - ${game.players.join("\n - ")}";
+
+                      if (game.players.isEmpty) {
+                        playersString = "";
+                      }
+
+                      return Container(
+                        color: Colors.white60,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              const Text(
+                                "Pickup Lacrosse Game",
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20
+                                ),
+                              ),
+                              const SizedBox(height: 15),
+                              RichText(
+                                text: TextSpan(
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 16
+                                  ),
+                                // Here is the explicit parent TextStyle
+                                children: <TextSpan>[
+                                  const TextSpan(text: 'Date: ',
+                                    style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  )),
+                                  TextSpan(text: DateFormat.MEd().format(DateFormat("yyyy-MM-dd").parseLoose(game.date))),
+                                ],
+                                ),
+                              ),
+                              const SizedBox(height: 15),
+                              RichText(
+                                text: TextSpan(
+                                  // Here is the explicit parent TextStyle
+                                  style: const TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 16
+                                  ),
+                                  children: <TextSpan>[
+                                    const TextSpan(text: 'Time: ',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                        )),
+                                    TextSpan(text: DateFormat.jm().format(DateFormat("hh:mm").parse(game.startTime))),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 15),
+                              RichText(
+                                text: TextSpan(
+                                  // Here is the explicit parent TextStyle
+                                  style: const TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 16
+                                  ),
+                                  children: <TextSpan>[
+                                    TextSpan(text: 'Players (${game.players.length}/${game.maxPlayers}):',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        )),
+                                    TextSpan(text: playersString),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 15),
+                              ElevatedButton(
+                                child: const Text('Join Game'),
+                                onPressed: () => {
+                                  if (game.players.length >= game.maxPlayers) {
+                                    sendToastMessage(context, "Failed to join, game is full!"),
+                                    Navigator.pop(context)
+                                  } else {
+                                    restAPI.joinGame(game.id, username).then((BoolResponse serverResponse) => {
+                                      if (serverResponse.boolResponse) {
+                                        sendToastMessage(context, "Successfully joined game!")
+                                      } else {
+                                        sendToastMessage(context, "Failed to join game, server error!")
+                                      },
+                                      Navigator.pop(context)
+                                    }),
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+              }
+          )
         );
       }
 

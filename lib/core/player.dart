@@ -18,6 +18,6 @@ class Player {
 
   @override
   String toString() {
-    return "Player $id";
+    return "$id";
   }
 }
