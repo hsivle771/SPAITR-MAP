@@ -10,7 +10,7 @@ app = Flask(__name__)
 connection = Connect.get_connection()
 db = connection.spaitr
 
-@app.route('/nearby_games/<float:CURR_COOR_X>/<float:CURR_COOR_Y>', methods=['GET'])
+@app.route('/nearby_games/<float(signed=True):CURR_COOR_X>/<float(signed=True):CURR_COOR_Y>', methods=['GET'])
 def nearby_games(CURR_COOR_X: float, CURR_COOR_Y: float):
     nearbyCursor = db.games.find(
         {"$and": [{"x_coord": {"$gt": (CURR_COOR_X - 1.0)}}, {"x_coord": {"$lt": (CURR_COOR_X + 1.0)}}, {"y_coord": {"$gt": (CURR_COOR_Y - 1.0)}}, {"y_coord": {"$lt": (CURR_COOR_Y + 1.0)}}]}
@@ -33,7 +33,7 @@ def join_game(GAME_ID: string, PLAYER_ID: string):
 
     return jsonify(True)
 
-@app.route('/create_game/<float:GAME_COOR_X>/<float:GAME_COOR_Y>/<string:START_DAY>/<string:START_TIME>/<int:MAX_PLAYERS>', methods=['PUT'])
+@app.route('/create_game/<float(signed=True):GAME_COOR_X>/<float(signed=True):GAME_COOR_Y>/<string:START_DAY>/<string:START_TIME>/<int:MAX_PLAYERS>', methods=['PUT'])
 def create_game(GAME_COOR_X: float, GAME_COOR_Y: float, START_DAY: string, START_TIME: string, MAX_PLAYERS: int):
     db.games.insert_one(
         {
