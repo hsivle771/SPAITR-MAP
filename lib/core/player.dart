@@ -10,8 +10,8 @@ class Player {
   }
 
   // https://codewithandrea.com/articles/parse-json-dart/
-  factory Player.fromJson(Map<String, dynamic> data) {    // this is required if robust lint rules are enabled
-    final id = data['id'] as String;
+  factory Player.fromJson(String data) {    // this is required if robust lint rules are enabled
+    final id = data;
 
     return Player(id);
   }

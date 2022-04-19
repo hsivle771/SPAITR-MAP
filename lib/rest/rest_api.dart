@@ -9,7 +9,7 @@ import 'package:spaitr_map/core/game.dart';
 import 'package:spaitr_map/rest/dummy_data.dart' as dummy_data;
 
 class URLS {
-  static const String baseURL = 'http://localhost:5000';
+  static const String baseURL = 'http://207.148.26.164:5000';
 }
 
 enum RequestType {PUT, GET, POST}
@@ -107,7 +107,7 @@ class RestAPI {
 
   Future<BoolResponse> createGame(String gameTime, String gameDate, int maxPlayerAmount, double coorX, double coorY) async {
     BoolResponse parseCreateGameResponse(String responseBody) {
-      Map<String, dynamic> parsedJson = jsonDecode(responseBody);
+      bool parsedJson = jsonDecode(responseBody);
       return BoolResponse.fromJson(parsedJson);
     }
 
@@ -121,13 +121,13 @@ class RestAPI {
     if (response.statusCode == 200) {
       return parseCreateGameResponse(response.body);
     } else {
-      throw Exception('Error parsing response from ${URLS.baseURL}');
+      throw Exception('Error parsing response from ${URLS.baseURL}. Response: ${response.body}');
     }
   }
 
   Future<BoolResponse> joinGame(String gameId, String playerId) async {
     BoolResponse parseJoinGameResponse(String responseBody) {
-      Map<String, dynamic> parsedJson = jsonDecode(responseBody);
+      bool parsedJson = jsonDecode(responseBody);
       return BoolResponse.fromJson(parsedJson);
     }
 

@@ -74,7 +74,10 @@ class MapSampleState extends State<MyHomePage> {
         desiredAccuracy: LocationAccuracy.high);
     currentPosition = LatLng(position.latitude, position.longitude);
 
-    fetchNearbyGames(position.latitude, position.longitude);
+    // Once position is determined, fetch the nearby games every 1 second
+    Timer.periodic(const Duration(seconds: 1), (timer) {
+      fetchNearbyGames(position.latitude, position.longitude);
+    });
 
     CameraPosition cameraPositon =
         CameraPosition(target: currentPosition, zoom: 16);
@@ -84,6 +87,7 @@ class MapSampleState extends State<MyHomePage> {
 
   void fetchNearbyGames(double xCoor, double yCoor) {
     List<Marker> newMarkers = [];
+    newMarkers.clear();
 
     restAPI.fetchGames(xCoor, yCoor).then((List<Game> games) {
       for (var game in games) {
@@ -162,17 +166,9 @@ class MapSampleState extends State<MyHomePage> {
             floatingActionButton: FloatingActionButton.extended(
               onPressed: () async {
                 // Open up create game page and wait until it receives a result back of the new game position
-                var newGamePosition = await Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => CreateGame(currentPosition)));
+                await Navigator.push(context, MaterialPageRoute(builder: (context) => CreateGame(currentPosition)));
 
-                var newMarkers = mapPoints;
-                if (newGamePosition != null) {
-                  newGoogleMapController
-                      .animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: newGamePosition, zoom: 16)));
-                  newMarkers.add(Marker(markerId: MarkerId("${newMarkers.length + 1}"), position: newGamePosition));
-                }
-
-                updateMarkers(newMarkers);
+                fetchNearbyGames(currentPosition.latitude, currentPosition.longitude);
               },
               label: const Text('Create Game'),
               icon: const Icon(Icons.add_location),
