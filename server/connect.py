@@ -9,6 +9,7 @@ class Connect(object):
         #  - Port: 7017
         #  - Username: root
         #  - Password: 123456
-        # return MongoClient("mongodb://root:123456@mongodb/test_db?retryWrites=true&w=majority&authSource=admin")
+        return MongoClient("mongodb://root:123456@mongodb/test_db?retryWrites=true&w=majority&authSource=admin")
         
-        return MongoClient("mongodb+srv://spaitrAdmin:spaitr@testcluster.dy8i5.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+		# Running with live database:
+        # return MongoClient("<INSERT DATABASE URL HERE>")
